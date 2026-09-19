@@ -1,0 +1,16 @@
+# Environment & Secret Keys
+.env
+.env.local
+
+# Python Virtual Environment
+.venv/
+env/
+venv/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+analytics.db

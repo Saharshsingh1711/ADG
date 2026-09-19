@@ -26,13 +26,13 @@ from typing_extensions import TypedDict
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
+from dotenv import load_dotenv
+
+# Load .env if present (override stale env vars)
+load_dotenv(override=True)
+
 MCP_SERVER_SCRIPT = str(Path(__file__).parent / "mcp_db_server.py")
 DB_PATH = str(Path(__file__).parent / "analytics.db")
-
-LLM_MODEL = os.environ.get("LLM_MODEL", "gpt-4o-mini")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-
-# Python executable — use the venv python if available
 PYTHON_EXE = sys.executable
 
 
@@ -81,7 +81,6 @@ async def _mcp_read_schema() -> str:
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.read_resource("db://schema")
-            # result.contents is a list of content blocks
             if result.contents:
                 return result.contents[0].text if hasattr(result.contents[0], "text") else str(result.contents[0])
             return "-- Schema unavailable"
@@ -98,7 +97,6 @@ async def _mcp_call_tool(tool_name: str, arguments: dict[str, Any]) -> str:
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool(tool_name, arguments=arguments)
-            # result.content is a list of content blocks
             if result.content:
                 return result.content[0].text if hasattr(result.content[0], "text") else str(result.content[0])
             return "{}"
@@ -107,11 +105,20 @@ async def _mcp_call_tool(tool_name: str, arguments: dict[str, Any]) -> str:
 # ── LLM Instance ─────────────────────────────────────────────────────────────
 
 def _get_llm() -> ChatOpenAI:
-    """Create and return the ChatOpenAI LLM instance."""
+    """Create and return the ChatOpenAI LLM instance with dynamic runtime configuration."""
+    model = os.environ.get("LLM_MODEL", "gpt-4o-mini")
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    base_url = os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")
+
+    # If using local/Ollama endpoints without an explicit key, use dummy key
+    if base_url and not api_key:
+        api_key = "local-key"
+
     return ChatOpenAI(
-        model=LLM_MODEL,
+        model=model,
         temperature=0,
-        api_key=OPENAI_API_KEY or None,
+        api_key=api_key or None,
+        base_url=base_url or None,
     )
 
 
@@ -140,8 +147,6 @@ async def planner(state: AgentState) -> dict[str, Any]:
     Node: Use the LLM to generate an SQL statement from the user's
     natural language input, and classify its risk level.
     """
-    llm = _get_llm()
-
     # Get the latest human message
     user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
     if not user_messages:
@@ -170,9 +175,9 @@ RULES:
 7. If the user asks to see the schema or table structure, use PRAGMA or SELECT from sqlite_master.
 8. Always be precise — do not generate queries that modify data unless explicitly asked."""
 
-    structured_llm = llm.with_structured_output(SQLPlan)
-
     try:
+        llm = _get_llm()
+        structured_llm = llm.with_structured_output(SQLPlan)
         plan: SQLPlan = await structured_llm.ainvoke([
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_query),
@@ -219,6 +224,13 @@ async def safety_gate(state: AgentState) -> dict[str, Any]:
 
     # READ_ONLY — auto-approve
     return {"human_approved": True}
+
+
+def route_after_planner(state: AgentState) -> Literal["safety_gate", "synthesizer"]:
+    """Conditional edge: if planning failed or no SQL generated, skip directly to synthesizer."""
+    if state.get("error") or not state.get("sql_query"):
+        return "synthesizer"
+    return "safety_gate"
 
 
 def route_after_safety_gate(state: AgentState) -> Literal["executor", "__end__"]:
@@ -285,8 +297,6 @@ async def synthesizer(state: AgentState) -> dict[str, Any]:
     user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
     user_query = user_messages[-1].content if user_messages else "Unknown query"
 
-    llm = _get_llm()
-
     synthesis_prompt = f"""You are a data analyst assistant. Summarize the following database query results
 in a clear, human-readable format.
 
@@ -304,6 +314,7 @@ INSTRUCTIONS:
 - If the data is empty, state that clearly."""
 
     try:
+        llm = _get_llm()
         response = await llm.ainvoke([
             SystemMessage(content="You are a helpful data analyst. Format query results clearly."),
             HumanMessage(content=synthesis_prompt),
@@ -328,9 +339,11 @@ def build_graph() -> StateGraph:
     Construct and return the compiled LangGraph state machine.
 
     Topology:
-        START → schema_fetcher → planner → safety_gate
-            ├─ (approved) → executor → synthesizer → END
-            └─ (denied)  → END
+        START → schema_fetcher → planner
+            ├─ (planning error / empty SQL) → synthesizer → END
+            └─ (valid SQL) → safety_gate
+                ├─ (approved) → executor → synthesizer → END
+                └─ (denied)  → END
     """
     builder = StateGraph(AgentState)
 
@@ -344,7 +357,7 @@ def build_graph() -> StateGraph:
     # Wire edges
     builder.add_edge(START, "schema_fetcher")
     builder.add_edge("schema_fetcher", "planner")
-    builder.add_edge("planner", "safety_gate")
+    builder.add_conditional_edges("planner", route_after_planner)
     builder.add_conditional_edges("safety_gate", route_after_safety_gate)
     builder.add_edge("executor", "synthesizer")
     builder.add_edge("synthesizer", END)

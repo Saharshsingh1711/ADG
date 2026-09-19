@@ -11,6 +11,11 @@ import os
 import sys
 import uuid
 
+from dotenv import load_dotenv
+
+# Load .env file automatically (override stale env vars)
+load_dotenv(override=True)
+
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 
@@ -72,10 +77,12 @@ async def run_cli() -> None:
 
     # Pre-flight checks
     api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not api_key:
-        print(f"\n{Colors.RED}{Colors.BOLD}⚠️  OPENAI_API_KEY not set!{Colors.RESET}")
-        print(f"{Colors.DIM}Set it with: set OPENAI_API_KEY=sk-...{Colors.RESET}")
-        print(f"{Colors.DIM}Or export OPENAI_API_KEY=sk-... on Linux/macOS{Colors.RESET}\n")
+    base_url = os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")
+    if not api_key and not base_url:
+        print(f"\n{Colors.RED}{Colors.BOLD}⚠️  OPENAI_API_KEY (or OPENAI_BASE_URL) not set!{Colors.RESET}")
+        print(f"{Colors.DIM}Option 1: Create a .env file with OPENAI_API_KEY=sk-...{Colors.RESET}")
+        print(f"{Colors.DIM}Option 2: Set in terminal with $env:OPENAI_API_KEY='sk-...'{Colors.RESET}")
+        print(f"{Colors.DIM}Option 3: Use local Ollama with $env:OPENAI_BASE_URL='http://localhost:11434/v1'{Colors.RESET}\n")
         sys.exit(1)
 
     # Compile the graph with MemorySaver
