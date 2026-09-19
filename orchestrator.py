@@ -297,8 +297,8 @@ async def synthesizer(state: AgentState) -> dict[str, Any]:
     user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
     user_query = user_messages[-1].content if user_messages else "Unknown query"
 
-    synthesis_prompt = f"""You are a data analyst assistant. Summarize the following database query results
-in a clear, human-readable format.
+    synthesis_prompt = f"""You are an expert data analyst assistant. Summarize the following database query results
+in a clean, professional, human-readable format.
 
 USER'S QUESTION: {user_query}
 SQL EXECUTED: {sql_query}
@@ -306,12 +306,12 @@ OPERATION TYPE: {risk_level}
 RAW RESULTS:
 {result_data}
 
-INSTRUCTIONS:
-- If the result contains tabular data, format it as a clean ASCII table or bullet list.
-- If it was a write operation, confirm what was changed and how many rows were affected.
-- Be concise but complete.
-- Do not show raw JSON to the user.
-- If the data is empty, state that clearly."""
+FORMATTING RULES:
+- If the result contains multiple rows or records, ALWAYS format them as a standard GitHub Markdown table with header dividers (e.g. `| Col 1 | Col 2 |` followed by `|---|---|`).
+- If it was a single scalar value (e.g. a count), state it in a clear single sentence.
+- If it was a write operation, clearly state what was changed, the table affected, and row count.
+- Keep the summary polished, clear, and direct. Do not dump raw JSON.
+- If no data matches, state that clearly in plain language."""
 
     try:
         llm = _get_llm()

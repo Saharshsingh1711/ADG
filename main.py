@@ -2,6 +2,7 @@
 Autonomous Database Guardian — Interactive CLI Harness
 Runs the LangGraph orchestrator, detects interrupt breakpoints for
 destructive queries, prompts the human operator, and resumes execution.
+Uses Rich for sleek, professional terminal UI with formatted tables & markdown.
 """
 
 from __future__ import annotations
@@ -18,56 +19,73 @@ load_dotenv(override=True)
 
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.prompt import Confirm, Prompt
+from rich.syntax import Syntax
+from rich.table import Table
 
 from orchestrator import compile_graph
 
-# ── ANSI Colors ──────────────────────────────────────────────────────────────
+console = Console()
 
-class Colors:
-    RESET   = "\033[0m"
-    BOLD    = "\033[1m"
-    DIM     = "\033[2m"
-    RED     = "\033[91m"
-    GREEN   = "\033[92m"
-    YELLOW  = "\033[93m"
-    BLUE    = "\033[94m"
-    MAGENTA = "\033[95m"
-    CYAN    = "\033[96m"
-    WHITE   = "\033[97m"
-    BG_RED  = "\033[41m"
+# ── Help & Banner ────────────────────────────────────────────────────────────
+
+def print_banner(session_id: str, model_name: str) -> None:
+    """Print a polished banner using Rich."""
+    content = (
+        "[bold cyan]AI-Powered Database Interaction Engine with Deterministic Guardrails[/bold cyan]\n\n"
+        "• [green]Natural language ➔ SQL[/green] with automatic risk classification\n"
+        "• [yellow]Destructive queries[/yellow] require explicit human approval via LangGraph interrupts\n"
+        "• [magenta]MCP Stdio Server[/magenta] for clean tool & schema resource decoupling\n\n"
+        f"[dim]Session: {session_id} | Model: {model_name}[/dim]\n"
+        "[dim]Commands: Type your query | 'schema' for DDL | 'help' for examples | 'quit' to exit[/dim]"
+    )
+    console.print(
+        Panel(
+            content,
+            title="[bold yellow]🛡️  AUTONOMOUS DATABASE GUARDIAN  🛡️[/bold yellow]",
+            border_style="cyan",
+            padding=(1, 2),
+        )
+    )
 
 
-# ── Banner ───────────────────────────────────────────────────────────────────
+def print_help() -> None:
+    """Display usage help and example queries."""
+    table = Table(title="📖 Example Queries & Expected Behaviors", border_style="dim")
+    table.add_column("Query", style="green", no_wrap=False)
+    table.add_column("Type", style="cyan")
+    table.add_column("Behavior", style="white")
 
-BANNER = f"""
-{Colors.CYAN}{Colors.BOLD}╔══════════════════════════════════════════════════════════════╗
-║         🛡️  AUTONOMOUS DATABASE GUARDIAN  🛡️                 ║
-║         AI-Powered Database Interaction Engine               ║
-╠══════════════════════════════════════════════════════════════╣
-║  • Natural language → SQL with safety guardrails             ║
-║  • Destructive queries require human approval                ║
-║  • Powered by MCP + LangGraph                                ║
-╠══════════════════════════════════════════════════════════════╣
-║  Commands:                                                   ║
-║    Type your question in plain English                       ║
-║    'schema'  — Show database schema                          ║
-║    'help'    — Show this help                                ║
-║    'quit'    — Exit the guardian                              ║
-╚══════════════════════════════════════════════════════════════╝{Colors.RESET}
-"""
+    table.add_row(
+        "how many users are there?",
+        "READ-ONLY",
+        "Executes SELECT COUNT(*) immediately ➔ returns count",
+    )
+    table.add_row(
+        "show top 5 orders with user details",
+        "READ-ONLY",
+        "Executes multi-table JOIN ➔ returns formatted table",
+    )
+    table.add_row(
+        "insert user 'sam' with email 'sam@test.com'",
+        "DESTRUCTIVE",
+        "Pauses at safety gate ➔ asks for [Y/n] confirmation",
+    )
+    table.add_row(
+        "delete system logs with level DEBUG",
+        "DESTRUCTIVE",
+        "Pauses at safety gate ➔ asks for [Y/n] confirmation",
+    )
+    table.add_row(
+        "schema",
+        "INSPECTION",
+        "Reads full db://schema DDL from MCP server",
+    )
 
-HELP_TEXT = f"""
-{Colors.YELLOW}📖 Usage Examples:{Colors.RESET}
-  • "How many users are there?"
-  • "Show me the top 5 orders by amount"
-  • "What are the error-level system logs?"
-  • "Insert a new user named 'test_user' with email 'test@example.com'"
-  • "Delete all system logs with level DEBUG"
-  • "Show me the database schema"
-
-{Colors.DIM}Read-only queries execute immediately.
-Destructive queries (INSERT/UPDATE/DELETE/ALTER/DROP) require your approval.{Colors.RESET}
-"""
+    console.print(table)
 
 
 # ── Core CLI Loop ────────────────────────────────────────────────────────────
@@ -79,37 +97,42 @@ async def run_cli() -> None:
     api_key = os.environ.get("OPENAI_API_KEY", "")
     base_url = os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")
     if not api_key and not base_url:
-        print(f"\n{Colors.RED}{Colors.BOLD}⚠️  OPENAI_API_KEY (or OPENAI_BASE_URL) not set!{Colors.RESET}")
-        print(f"{Colors.DIM}Option 1: Create a .env file with OPENAI_API_KEY=sk-...{Colors.RESET}")
-        print(f"{Colors.DIM}Option 2: Set in terminal with $env:OPENAI_API_KEY='sk-...'{Colors.RESET}")
-        print(f"{Colors.DIM}Option 3: Use local Ollama with $env:OPENAI_BASE_URL='http://localhost:11434/v1'{Colors.RESET}\n")
+        console.print(
+            Panel(
+                "[bold red]OPENAI_API_KEY (or OPENAI_BASE_URL) is not set![/bold red]\n\n"
+                "Please configure your .env file with your API key:\n"
+                "  OPENAI_API_KEY=your_key_here\n"
+                "  OPENAI_BASE_URL=https://api.groq.com/openai/v1 (optional for Groq/Ollama)",
+                title="[red]Configuration Error[/red]",
+                border_style="red",
+            )
+        )
         sys.exit(1)
 
     # Compile the graph with MemorySaver
     graph, checkpointer = compile_graph()
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
+    model_name = os.environ.get("LLM_MODEL", "openai/gpt-oss-120b")
 
-    print(BANNER)
-    print(f"{Colors.DIM}Session ID: {thread_id}{Colors.RESET}")
-    print(f"{Colors.DIM}LLM Model:  {os.environ.get('LLM_MODEL', 'gpt-4o-mini')}{Colors.RESET}")
-    print()
+    print_banner(thread_id, model_name)
+    console.print()
 
     while True:
         try:
             # Read user input
-            user_input = input(f"{Colors.GREEN}{Colors.BOLD}🗣️  You: {Colors.RESET}").strip()
+            user_input = Prompt.ask("\n[bold green]🗣️  You[/bold green]").strip()
 
             if not user_input:
                 continue
 
             # Handle special commands
             if user_input.lower() in ("quit", "exit", "q"):
-                print(f"\n{Colors.CYAN}👋 Goodbye! Database Guardian shutting down.{Colors.RESET}\n")
+                console.print("\n[bold cyan]👋 Goodbye! Database Guardian shutting down.[/bold cyan]\n")
                 break
 
             if user_input.lower() == "help":
-                print(HELP_TEXT)
+                print_help()
                 continue
 
             if user_input.lower() == "schema":
@@ -127,21 +150,19 @@ async def run_cli() -> None:
                 "error": "",
             }
 
-            print(f"\n{Colors.DIM}⏳ Processing...{Colors.RESET}")
+            console.print("[dim]⏳ Thinking & planning query...[/dim]")
 
             # Run the graph — may halt at safety_gate interrupt
             try:
                 result = await graph.ainvoke(input_state, config=config)
             except Exception as invoke_exc:
-                # Check if this is an interrupt-related issue
-                print(f"{Colors.RED}❌ Invocation error: {invoke_exc}{Colors.RESET}\n")
+                console.print(Panel(f"[red]Invocation error:[/red] {invoke_exc}", border_style="red"))
                 continue
 
             # Check for pending interrupts (destructive query approval)
             state_snapshot = await graph.aget_state(config)
 
             while state_snapshot.next:
-                # There are pending nodes — the graph was interrupted
                 # Extract interrupt data from the state
                 interrupt_data = None
                 if hasattr(state_snapshot, "tasks") and state_snapshot.tasks:
@@ -155,24 +176,26 @@ async def run_cli() -> None:
                     sql_query = interrupt_data.get("sql_query", "N/A")
                     risk = interrupt_data.get("risk_level", "UNKNOWN")
 
-                    print(f"\n{Colors.BG_RED}{Colors.WHITE}{Colors.BOLD}"
-                          f" ⚠️  DESTRUCTIVE QUERY DETECTED "
-                          f"{Colors.RESET}")
-                    print(f"{Colors.YELLOW}┌─────────────────────────────────────────────┐{Colors.RESET}")
-                    print(f"{Colors.YELLOW}│ Risk Level: {Colors.RED}{risk}{Colors.RESET}")
-                    print(f"{Colors.YELLOW}│ SQL Query:{Colors.RESET}")
-                    print(f"{Colors.YELLOW}│   {Colors.WHITE}{sql_query}{Colors.RESET}")
-                    print(f"{Colors.YELLOW}└─────────────────────────────────────────────┘{Colors.RESET}")
+                    warning_content = (
+                        f"[bold red]RISK LEVEL: {risk}[/bold red]\n\n"
+                        f"[bold white]Proposed SQL Query:[/bold white]\n"
+                    )
+                    console.print(
+                        Panel(
+                            warning_content + f"```sql\n{sql_query}\n```",
+                            title="[bold yellow on red] ⚠️  DESTRUCTIVE QUERY REQUIRING APPROVAL [/bold yellow on red]",
+                            border_style="red",
+                            padding=(1, 2),
+                        )
+                    )
 
-                    approval = input(
-                        f"{Colors.MAGENTA}{Colors.BOLD}   Approve execution? [Y/n]: {Colors.RESET}"
-                    ).strip().lower()
+                    approved = Confirm.ask("[bold yellow]⚡ Do you authorize execution of this mutation?[/bold yellow]")
 
-                    if approval in ("y", "yes", ""):
-                        print(f"{Colors.GREEN}   ✅ Approved — executing...{Colors.RESET}")
+                    if approved:
+                        console.print("[bold green]   ✅ Authorized — dispatching via MCP...[/bold green]")
                         resume_value = "approved"
                     else:
-                        print(f"{Colors.RED}   🚫 Denied — query will not execute.{Colors.RESET}")
+                        console.print("[bold red]   🚫 Denied — query aborted. No changes made.[/bold red]")
                         resume_value = "denied"
 
                     # Resume the graph with the approval decision
@@ -184,42 +207,48 @@ async def run_cli() -> None:
                     # Check if there are more interrupts
                     state_snapshot = await graph.aget_state(config)
                 else:
-                    # Unknown interrupt — break to avoid infinite loop
-                    print(f"{Colors.RED}⚠️  Unknown interrupt state. Skipping.{Colors.RESET}")
                     break
 
-            # Display final answer
+            # Display final answer formatted with Rich Markdown
             final_answer = ""
             if isinstance(result, dict):
                 final_answer = result.get("final_answer", "")
 
             if not final_answer:
-                # Try to get from latest state
                 latest_state = await graph.aget_state(config)
                 if hasattr(latest_state, "values"):
                     final_answer = latest_state.values.get("final_answer", "")
 
             if final_answer:
-                print(f"\n{Colors.BLUE}{Colors.BOLD}🤖 Guardian:{Colors.RESET}")
-                print(f"{Colors.WHITE}{final_answer}{Colors.RESET}")
+                if final_answer.startswith("❌"):
+                    console.print(Panel(final_answer, title="[bold red]Error[/bold red]", border_style="red"))
+                elif final_answer.startswith("🚫"):
+                    console.print(Panel(final_answer, title="[bold yellow]Action Blocked[/bold yellow]", border_style="yellow"))
+                else:
+                    console.print(
+                        Panel(
+                            Markdown(final_answer),
+                            title="[bold cyan]🛡️  Guardian[/bold cyan]",
+                            border_style="blue",
+                            padding=(1, 2),
+                        )
+                    )
             else:
                 error = result.get("error", "") if isinstance(result, dict) else ""
                 if error:
-                    print(f"\n{Colors.RED}❌ {error}{Colors.RESET}")
+                    console.print(Panel(f"[red]{error}[/red]", title="[bold red]Error[/bold red]", border_style="red"))
                 else:
-                    print(f"\n{Colors.DIM}No result returned.{Colors.RESET}")
+                    console.print("[dim]No result returned.[/dim]")
 
-            print()  # Blank line before next prompt
-
-            # Generate a new thread_id for the next query to get fresh state
+            # Generate a fresh thread_id for the next query
             thread_id = str(uuid.uuid4())
             config = {"configurable": {"thread_id": thread_id}}
 
         except KeyboardInterrupt:
-            print(f"\n\n{Colors.CYAN}👋 Interrupted. Goodbye!{Colors.RESET}\n")
+            console.print("\n\n[bold cyan]👋 Interrupted. Goodbye![/bold cyan]\n")
             break
         except EOFError:
-            print(f"\n{Colors.CYAN}👋 EOF reached. Goodbye!{Colors.RESET}\n")
+            console.print("\n[bold cyan]👋 EOF reached. Goodbye![/bold cyan]\n")
             break
 
 
@@ -230,7 +259,7 @@ def main() -> None:
     try:
         asyncio.run(run_cli())
     except KeyboardInterrupt:
-        print("\nShutting down...")
+        pass
 
 
 if __name__ == "__main__":
