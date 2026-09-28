@@ -12,6 +12,13 @@ import os
 import sys
 import uuid
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from dotenv import load_dotenv
 
 # Load .env file automatically (override stale env vars)
@@ -139,9 +146,9 @@ async def run_cli() -> None:
                 user_input = "Show me the complete database schema with all table definitions"
 
             # Prepare input state
+            # schema_ddl is intentionally omitted so the cached schema persists across turns
             input_state = {
                 "messages": [HumanMessage(content=user_input)],
-                "schema_ddl": "",
                 "sql_query": "",
                 "risk_level": "",
                 "human_approved": False,
@@ -240,9 +247,7 @@ async def run_cli() -> None:
                 else:
                     console.print("[dim]No result returned.[/dim]")
 
-            # Generate a fresh thread_id for the next query
-            thread_id = str(uuid.uuid4())
-            config = {"configurable": {"thread_id": thread_id}}
+            # Multi-turn: keep same thread_id for conversation memory
 
         except KeyboardInterrupt:
             console.print("\n\n[bold cyan]👋 Interrupted. Goodbye![/bold cyan]\n")

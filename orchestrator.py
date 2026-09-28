@@ -14,11 +14,19 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
+import aiosqlite
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from pydantic import BaseModel, Field
@@ -102,6 +110,30 @@ async def _mcp_call_tool(tool_name: str, arguments: dict[str, Any]) -> str:
             return "{}"
 
 
+# ── Audit Logging ────────────────────────────────────────────────────────────
+
+
+async def _log_audit(
+    sql_query: str,
+    risk_level: str,
+    approved: bool,
+    rows_affected: int = 0,
+    result_summary: str = "",
+    error: str = "",
+) -> None:
+    """Log a query execution to the audit_log table (fire-and-forget)."""
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "INSERT INTO audit_log (query_text, risk_level, approved, rows_affected, result_summary, error) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (sql_query, risk_level, 1 if approved else 0, rows_affected, result_summary, error),
+            )
+            await db.commit()
+    except Exception:
+        pass  # Audit logging must never break the main pipeline
+
+
 # ── LLM Instance ─────────────────────────────────────────────────────────────
 
 def _get_llm() -> ChatOpenAI:
@@ -178,10 +210,14 @@ RULES:
     try:
         llm = _get_llm()
         structured_llm = llm.with_structured_output(SQLPlan)
-        plan: SQLPlan = await structured_llm.ainvoke([
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_query),
-        ])
+        
+        # Include conversation history (last 10 messages) so multi-turn context is preserved
+        history = list(state.get("messages", []))
+        if len(history) > 10:
+            history = history[-10:]
+            
+        messages_to_send = [SystemMessage(content=system_prompt)] + history
+        plan: SQLPlan = await structured_llm.ainvoke(messages_to_send)
 
         return {
             "sql_query": plan.sql_query,
@@ -216,6 +252,7 @@ async def safety_gate(state: AgentState) -> dict[str, Any]:
         if approval == "approved":
             return {"human_approved": True}
         else:
+            await _log_audit(state.get("sql_query", ""), risk_level, approved=False)
             return {
                 "human_approved": False,
                 "final_answer": "🚫 Query execution denied by operator. No changes were made to the database.",
@@ -258,17 +295,23 @@ async def executor(state: AgentState) -> dict[str, Any]:
         parsed = json.loads(raw_result)
 
         if parsed.get("error"):
+            await _log_audit(sql_query, risk_level, approved=True,
+                             error=parsed.get("message", "Unknown error"))
             return {
                 "error": parsed.get("message", "Unknown execution error"),
                 "result_data": raw_result,
                 "messages": [AIMessage(content=f"❌ Execution error: {parsed.get('message')}")],
             }
 
+        rows = parsed.get("rows_affected", parsed.get("row_count", 0))
+        await _log_audit(sql_query, risk_level, approved=True, rows_affected=rows,
+                         result_summary=f"Success: {rows} rows")
         return {
             "result_data": raw_result,
             "messages": [AIMessage(content=f"✅ Query executed successfully.")],
         }
     except Exception as exc:
+        await _log_audit(sql_query, risk_level, approved=True, error=str(exc))
         return {
             "error": f"Execution failed: {exc}",
             "result_data": "{}",

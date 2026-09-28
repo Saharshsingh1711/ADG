@@ -8,6 +8,13 @@ import asyncio
 import sys
 from pathlib import Path
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import aiosqlite
 
 DB_PATH = Path(__file__).parent / "analytics.db"
@@ -45,6 +52,19 @@ CREATE TABLE IF NOT EXISTS system_logs (
 );
 """
 
+CREATE_AUDIT_LOG = """
+CREATE TABLE IF NOT EXISTS audit_log (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    query_text      TEXT    NOT NULL,
+    risk_level      TEXT    NOT NULL DEFAULT 'READ_ONLY',
+    approved        BOOLEAN NOT NULL DEFAULT 1,
+    rows_affected   INTEGER DEFAULT 0,
+    result_summary  TEXT    DEFAULT '',
+    error           TEXT    DEFAULT '',
+    executed_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+"""
+
 # ── Seed Data ────────────────────────────────────────────────────────────────
 
 SEED_USERS = """
@@ -63,21 +83,21 @@ INSERT OR IGNORE INTO users (username, email, role, created_at) VALUES
 
 SEED_ORDERS = """
 INSERT OR IGNORE INTO orders (user_id, product, amount, status, ordered_at) VALUES
-    (1, 'Enterprise License',      4999.99, 'completed',  '2024-03-01 10:00:00'),
-    (2, 'Pro Subscription',         299.00, 'completed',  '2024-03-15 11:30:00'),
-    (1, 'Data Add-on Pack',          99.50, 'completed',  '2024-04-02 09:15:00'),
-    (3, 'Starter Plan',              49.99, 'pending',    '2024-04-20 14:00:00'),
-    (4, 'Pro Subscription',         299.00, 'completed',  '2024-05-10 16:30:00'),
-    (5, 'Enterprise License',      4999.99, 'shipped',    '2024-05-25 08:45:00'),
-    (2, 'API Access Token',         149.00, 'completed',  '2024-06-05 12:00:00'),
-    (6, 'Starter Plan',              49.99, 'cancelled',  '2024-06-18 10:30:00'),
-    (7, 'Pro Subscription',         299.00, 'pending',    '2024-07-01 15:00:00'),
-    (3, 'Data Add-on Pack',          99.50, 'completed',  '2024-07-15 11:00:00'),
-    (8, 'Enterprise License',      4999.99, 'shipped',    '2024-08-01 09:30:00'),
-    (9, 'Starter Plan',              49.99, 'completed',  '2024-08-20 13:45:00'),
-    (10,'Pro Subscription',         299.00, 'completed',  '2024-09-05 10:15:00'),
-    (4, 'API Access Token',         149.00, 'pending',    '2024-09-18 16:00:00'),
-    (5, 'Data Add-on Pack',          99.50, 'completed',  '2024-10-01 08:00:00');
+    ((SELECT id FROM users WHERE username = 'alice'),   'Enterprise License', 4999.99, 'completed',  '2024-03-01 10:00:00'),
+    ((SELECT id FROM users WHERE username = 'bob'),     'Pro Subscription',    299.00, 'completed',  '2024-03-15 11:30:00'),
+    ((SELECT id FROM users WHERE username = 'alice'),   'Data Add-on Pack',     99.50, 'completed',  '2024-04-02 09:15:00'),
+    ((SELECT id FROM users WHERE username = 'charlie'), 'Starter Plan',         49.99, 'pending',    '2024-04-20 14:00:00'),
+    ((SELECT id FROM users WHERE username = 'diana'),   'Pro Subscription',    299.00, 'completed',  '2024-05-10 16:30:00'),
+    ((SELECT id FROM users WHERE username = 'eve'),     'Enterprise License', 4999.99, 'shipped',    '2024-05-25 08:45:00'),
+    ((SELECT id FROM users WHERE username = 'bob'),     'API Access Token',    149.00, 'completed',  '2024-06-05 12:00:00'),
+    ((SELECT id FROM users WHERE username = 'frank'),   'Starter Plan',         49.99, 'cancelled',  '2024-06-18 10:30:00'),
+    ((SELECT id FROM users WHERE username = 'grace'),   'Pro Subscription',    299.00, 'pending',    '2024-07-01 15:00:00'),
+    ((SELECT id FROM users WHERE username = 'charlie'), 'Data Add-on Pack',     99.50, 'completed',  '2024-07-15 11:00:00'),
+    ((SELECT id FROM users WHERE username = 'heidi'),   'Enterprise License', 4999.99, 'shipped',    '2024-08-01 09:30:00'),
+    ((SELECT id FROM users WHERE username = 'ivan'),    'Starter Plan',         49.99, 'completed',  '2024-08-20 13:45:00'),
+    ((SELECT id FROM users WHERE username = 'judy'),    'Pro Subscription',    299.00, 'completed',  '2024-09-05 10:15:00'),
+    ((SELECT id FROM users WHERE username = 'diana'),   'API Access Token',    149.00, 'pending',    '2024-09-18 16:00:00'),
+    ((SELECT id FROM users WHERE username = 'eve'),     'Data Add-on Pack',     99.50, 'completed',  '2024-10-01 08:00:00');
 """
 
 SEED_SYSTEM_LOGS = """
@@ -117,7 +137,8 @@ async def initialize_database() -> None:
         await db.execute(CREATE_USERS)
         await db.execute(CREATE_ORDERS)
         await db.execute(CREATE_SYSTEM_LOGS)
-        print("   ✅ Tables created (users, orders, system_logs)")
+        await db.execute(CREATE_AUDIT_LOG)
+        print("   ✅ Tables created (users, orders, system_logs, audit_log)")
 
         # Seed data
         await db.executescript(SEED_USERS)
@@ -129,7 +150,7 @@ async def initialize_database() -> None:
 
     # Verify
     async with aiosqlite.connect(str(DB_PATH)) as db:
-        for table in ("users", "orders", "system_logs"):
+        for table in ("users", "orders", "system_logs", "audit_log"):
             cursor = await db.execute(f"SELECT COUNT(*) FROM {table}")
             row = await cursor.fetchone()
             count = row[0] if row else 0

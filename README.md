@@ -102,12 +102,15 @@ Connecting LLMs directly to production databases poses severe risks: prompt inje
 
 ## ✨ Key Features
 
+- **Interactive Web Dashboard**: Real-time WebSocket-powered glassmorphic web UI with live markdown rendering, visual HITL approval modals, audit log inspector, and schema viewer.
 - **MCP Architecture (Model Context Protocol)**: Uses the official MCP Python SDK (`MCPServer`) to expose schema resources and query tools over `stdio`.
 - **Deterministic State Graph**: 5-node LangGraph pipeline (`schema_fetcher` ➔ `planner` ➔ `safety_gate` ➔ `executor` ➔ `synthesizer`).
-- **Human-in-the-Loop (HITL) Gate**: Destructive queries halt via dynamic `interrupt()` and resume only with a cryptographically checked `Command(resume="approved")` token.
+- **Human-in-the-Loop (HITL) Gate**: Destructive queries halt via dynamic `interrupt()` and resume only with an explicit approval token.
+- **Audit Logging**: Every query, risk classification, approval status, execution time, and row count is persisted to the `audit_log` table.
+- **Multi-Turn Conversation Memory**: Maintains thread context across questions so the LLM remembers previous queries and entities.
 - **Dynamic Multi-Provider LLM Support**: Works with **Groq** (free ultra-fast inference), **OpenAI**, **Google Gemini**, or **local Ollama** via standard OpenAI-compatible base URLs.
 - **Relational Integrity Protection**: Foreign key enforcement prevents orphaned records and database corruption.
-- **Rich Terminal UI**: ANSI color banners, styled Markdown tables, and structured warning boxes.
+- **Rich Terminal UI & Web UI**: ANSI color banners, styled Markdown tables, and structured warning boxes in terminal + web interface.
 
 ---
 
@@ -117,8 +120,10 @@ Connecting LLMs directly to production databases poses severe risks: prompt inje
 ADG/
 ├── mcp_db_server.py      # MCP Server: db://schema resource & read/write tools (stdio)
 ├── orchestrator.py       # LangGraph state machine with planner, safety gate & synthesizer
+├── web_server.py         # FastAPI + WebSocket backend for the web dashboard
+├── static/               # Glassmorphic frontend (index.html, style.css, app.js)
 ├── main.py               # Interactive CLI harness with Rich formatting & HITL loop
-├── init_db.py            # SQLite seed script (users, orders, system_logs)
+├── init_db.py            # SQLite seed script (users, orders, system_logs, audit_log)
 ├── test_server.py        # Automated MCP smoke test suite
 ├── requirements.txt      # Pinned dependencies
 ├── .env.example          # Environment variable template
@@ -183,7 +188,7 @@ LLM_MODEL=llama3.1
 
 ### Database Initialization
 
-Pre-seed the SQLite database with 45 sample records (`users`, `orders`, `system_logs`):
+Pre-seed the SQLite database with sample records (`users`, `orders`, `system_logs`, `audit_log`):
 
 ```bash
 python init_db.py
@@ -191,8 +196,15 @@ python init_db.py
 
 ### Running the Guardian
 
-Launch the interactive terminal interface:
+You can run ADG via the **Web Dashboard** or the **Terminal CLI**:
 
+#### 🌐 Option 1: Web Dashboard (Recommended)
+```bash
+python web_server.py
+```
+Open **`http://localhost:8000`** in your browser to interact with the real-time AI dashboard.
+
+#### 💻 Option 2: Terminal CLI
 ```bash
 python main.py
 ```

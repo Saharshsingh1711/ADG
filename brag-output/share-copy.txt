@@ -1,0 +1,32 @@
+# 🚀 Social Launch Copy for ADG (Autonomous Database Guardian)
+
+## Option 1: X (Twitter) — High-Impact Developer Hook
+Giving an LLM direct write access to your database is like giving a toddler a flame thrower. 🔥
+
+I built **Autonomous Database Guardian (ADG)**:
+⚡ Natural language ➔ SQL via Model Context Protocol (MCP)
+🛑 Destructive mutations physically HALT at the LangGraph state machine level
+👤 Human-in-the-Loop (HITL) physical interrupt gates
+🔒 Automatic relational foreign key enforcement & tamper-evident audit logs
+
+Safe queries run at machine speed. Deletions require your cryptographic key.
+
+GitHub: https://github.com/Saharshsingh1711/ADG
+
+---
+
+## Option 2: LinkedIn — Engineering Architecture Deep-Dive
+Prompt guardrails are not enough to protect production databases from agentic hallucinations. 
+
+I designed and open-sourced **Autonomous Database Guardian (ADG)** — a deterministic database interaction engine built with:
+1. **Standardized Model Context Protocol (MCP)**: Server resources (`db://schema`) and decoupled read/write tool transports over stdio.
+2. **LangGraph State Machine**: 5-node pipeline (`schema_fetcher` ➔ `planner` ➔ `safety_gate` ➔ `executor` ➔ `synthesizer`).
+3. **Deterministic Safety Gates**: Mutating queries (`DELETE`, `DROP`, `UPDATE`) trigger runtime `interrupt()` tokens that can only resume through explicit operator approval.
+4. **Mission Control Web Cockpit**: Real-time WebSocket streaming, schema tree inspector, and live audit stream.
+
+Check out the demo and architecture: https://github.com/Saharshsingh1711/ADG
+
+---
+
+## Option 3: Short / One-Liner
+Autonomous Database Guardian (ADG): The AI database copilot with deterministic LangGraph safety gates so your agents can't accidentally drop production. 🛡️
