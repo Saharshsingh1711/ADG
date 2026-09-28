@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # ── ADG Application Gateway ──
+  adg-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adg_guardian
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - DB_TYPE=postgres
+      - DATABASE_URL=postgresql://adg_admin:supersecurepassword@postgres-db:5432/analytics
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENVIRONMENT=production
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    volumes:
+      - adg_data:/app/data
+    networks:
+      - adg_network
+
+  # ── Production PostgreSQL Database ──
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: adg_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: adg_admin
+      POSTGRES_PASSWORD: supersecurepassword
+      POSTGRES_DB: analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adg_admin -d analytics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - adg_network
+
+volumes:
+  adg_data:
+  postgres_data:
+
+networks:
+  adg_network:
+    driver: bridge
