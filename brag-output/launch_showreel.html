@@ -3,32 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADG — Product Launch Video</title>
+    <title>ADG — Product Launch Video | /brag</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <style>
         :root {
-            --bg-base: #0b0f19;
-            --bg-surface: #111827;
-            --bg-card: #151e31;
-            --bg-elevated: #1f2937;
+            --bg-base: #0a0e17;
+            --bg-surface: #101623;
+            --bg-card: #151d2e;
+            --bg-elevated: #1b253b;
             --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-medium: rgba(255, 255, 255, 0.15);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
+            --border-medium: rgba(255, 255, 255, 0.14);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
             --primary: #3b82f6;
             --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
             --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
             --warning: #f59e0b;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #030712;
-            color: var(--text-main);
+            color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             display: flex;
             flex-direction: column;
@@ -40,291 +42,456 @@
         }
 
         /* ── Player 16:9 Viewport ── */
-        .viewport {
+        .stage {
             position: relative;
             width: 1200px;
             height: 675px;
             background-color: var(--bg-base);
             border: 1px solid var(--border-medium);
-            border-radius: 16px;
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-        }
-
-        .scene {
-            position: absolute;
-            inset: 0;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            padding: 48px;
-            text-align: center;
         }
 
-        .scene.active {
-            opacity: 1;
-            visibility: visible;
+        /* Simulated Cursor */
+        .fake-cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            z-index: 999;
+            pointer-events: none;
+            transition: transform 0.1s ease;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
         }
 
-        /* ── Scene 1: The AI Risk ── */
-        .s1-kicker {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--danger);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 12px;
-        }
-
-        .s1-headline {
-            font-size: 38px;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.02em;
-            margin-bottom: 28px;
-            max-width: 720px;
-            line-height: 1.25;
-        }
-
-        .code-card {
-            width: 700px;
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            text-align: left;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .code-card-top {
+        /* Top Header */
+        .header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 14px;
-            background-color: rgba(0, 0, 0, 0.2);
+            height: 48px;
+            padding: 0 16px;
+            background-color: var(--bg-surface);
             border-bottom: 1px solid var(--border-subtle);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            color: var(--text-dim);
+            flex-shrink: 0;
         }
 
-        .code-card-dots {
+        .brand {
             display: flex;
-            gap: 6px;
+            align-items: center;
+            gap: 8px;
         }
 
-        .code-dot { width: 10px; height: 10px; border-radius: 50%; background: #334155; }
-        .code-dot.red { background: var(--danger); }
-
-        .code-content {
-            padding: 16px 20px;
-            font-family: 'JetBrains Mono', monospace;
+        .brand-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            background-color: var(--bg-elevated);
+            border-radius: 6px;
             font-size: 14px;
-            line-height: 1.6;
-            color: #cbd5e1;
         }
 
-        /* ── Scene 2: The Solution ── */
-        .s2-badge {
-            display: inline-flex;
+        .brand-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .status-pill {
+            display: flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 12px;
-            background-color: var(--bg-surface-elevated);
+            padding: 3px 8px;
+            background-color: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--text-secondary);
         }
 
-        .s2-headline {
-            font-size: 44px;
-            font-weight: 800;
-            color: var(--text-main);
-            letter-spacing: -0.03em;
-            margin-bottom: 14px;
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--success);
         }
 
-        .s2-sub {
-            font-size: 18px;
-            color: var(--text-muted);
-            max-width: 640px;
-            line-height: 1.5;
-            margin-bottom: 28px;
-        }
-
-        .feature-grid {
+        /* Workspace */
+        .workspace {
             display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+        }
+
+        .table-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 10px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            color: var(--text-primary);
+        }
+
+        .table-badge {
+            font-size: 10px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        /* Main Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .messages-pane {
+            flex: 1;
+            padding: 20px 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             gap: 16px;
         }
 
-        .feature-item {
-            padding: 14px 20px;
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        /* ── Scene 3: The Safety Gate ── */
-        .s3-pipeline {
+        /* Welcome Section */
+        .welcome-box {
+            text-align: center;
+            max-width: 600px;
+            margin: 12px auto;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
         }
 
-        .pipe-node {
-            padding: 6px 14px;
-            background-color: var(--bg-surface);
+        .welcome-chip {
+            padding: 2px 8px;
+            background-color: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            color: var(--text-muted);
-        }
-
-        .pipe-node.active {
-            border-color: var(--danger);
-            background-color: var(--danger);
-            color: #ffffff;
+            border-radius: 12px;
+            font-size: 10.5px;
             font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
         }
 
-        .approval-dialog {
-            width: 720px;
+        .welcome-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .welcome-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .suggestions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .suggestion {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px 12px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .suggestion.active-click {
+            background-color: var(--bg-elevated);
+            border-color: var(--primary);
+            transform: scale(0.98);
+        }
+
+        .pill-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 4px;
+            border-radius: 3px;
+            width: fit-content;
+        }
+
+        .pill-tag.read { background: var(--success-bg); color: var(--success); }
+        .pill-tag.write { background: var(--danger-bg); color: var(--danger); }
+
+        .suggestion-title {
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Message Rows */
+        .msg-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        .msg-user {
+            align-self: flex-end;
+            max-width: 75%;
+        }
+
+        .user-bubble {
+            padding: 8px 14px;
             background-color: var(--bg-card);
             border: 1px solid var(--border-medium);
             border-radius: 12px;
-            padding: 24px;
-            text-align: left;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border-bottom-right-radius: 4px;
+            font-size: 13px;
         }
 
-        .dialog-header {
+        .msg-guardian {
+            align-self: flex-start;
+            width: 100%;
+        }
+
+        .guardian-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .card-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .dialog-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--danger);
-        }
-
-        .dialog-sql {
-            background-color: #090d16;
-            border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            padding: 12px 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            color: #fca5a5;
-            margin-bottom: 18px;
-        }
-
-        .dialog-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .btn {
-            padding: 8px 18px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn.primary { background-color: var(--success); color: #ffffff; }
-        .btn.secondary { background-color: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border-medium); }
-
-        /* ── Scene 4: Instant Telemetry ── */
-        .cockpit-view {
-            width: 800px;
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        .cockpit-top {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 18px;
-            background-color: var(--bg-card);
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.02);
             border-bottom: 1px solid var(--border-subtle);
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 600;
-            color: var(--text-muted);
+        }
+
+        .query-block {
+            margin: 10px 14px 0 14px;
+            background-color: #070a10;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #cbd5e1;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            text-align: left;
+            font-size: 11px;
+            margin: 10px 0;
         }
 
         .data-table th {
-            padding: 10px 18px;
-            background-color: rgba(255, 255, 255, 0.02);
-            color: var(--text-dim);
-            border-bottom: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-medium);
         }
 
         .data-table td {
-            padding: 10px 18px;
+            padding: 6px 10px;
             border-bottom: 1px solid var(--border-subtle);
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
 
-        /* ── Scene 5: Outro ── */
-        .s5-headline {
-            font-size: 46px;
+        /* Safety Gate Hazard Prompt */
+        .hazard-box {
+            margin: 10px 14px;
+            padding: 12px 14px;
+            background-color: var(--danger-bg);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hazard-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--danger);
+        }
+
+        .hazard-sql {
+            background-color: #070a10;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #fca5a5;
+        }
+
+        .hazard-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .btn-act {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-act.approve { background-color: var(--success); color: #ffffff; }
+        .btn-act.deny { background-color: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border-medium); }
+
+        /* Composer */
+        .composer-bar {
+            padding: 0 32px 16px 32px;
+            width: 100%;
+        }
+
+        .composer-box {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .simulated-text {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .cursor-pipe {
+            display: inline-block;
+            width: 2px;
+            height: 14px;
+            background-color: var(--primary);
+            margin-left: 2px;
+            vertical-align: middle;
+            animation: blink 0.7s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .btn-send-sim {
+            width: 28px;
+            height: 28px;
+            background-color: var(--primary);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+        }
+
+        /* ── Overlay Outro Scene ── */
+        .outro-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(10, 14, 23, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            padding: 40px;
+        }
+
+        .outro-badge {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            background-color: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            color: var(--primary);
+            margin-bottom: 14px;
+        }
+
+        .outro-title {
+            font-size: 40px;
             font-weight: 800;
-            color: var(--text-main);
             letter-spacing: -0.02em;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
-        .s5-sub {
+        .outro-sub {
             font-size: 16px;
-            color: var(--text-muted);
+            color: var(--text-secondary);
+            max-width: 540px;
             margin-bottom: 24px;
         }
 
-        .repo-badge {
-            display: inline-block;
+        .clone-box {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
+            font-size: 13px;
             padding: 10px 24px;
             background-color: var(--bg-surface);
             border: 1px solid var(--border-medium);
             border-radius: 8px;
-            color: var(--text-main);
+            color: var(--text-primary);
         }
 
-        /* ── Controls Bar ── */
+        /* ── Player Controls ── */
         .controls {
             display: flex;
             align-items: center;
             width: 1200px;
             margin-top: 14px;
-            padding: 10px 18px;
+            padding: 8px 16px;
             background-color: var(--bg-surface);
             border: 1px solid var(--border-subtle);
             border-radius: 8px;
@@ -335,7 +502,7 @@
         .ctrl-btn {
             background-color: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            color: var(--text-main);
+            color: var(--text-primary);
             padding: 4px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -343,12 +510,7 @@
             font-weight: 600;
         }
 
-        .ctrl-btn:hover {
-            background-color: var(--primary);
-            color: #ffffff;
-        }
-
-        .progress-bar {
+        .progress-track {
             flex: 1;
             height: 4px;
             background-color: var(--bg-elevated);
@@ -357,7 +519,7 @@
             overflow: hidden;
         }
 
-        .progress-indicator {
+        .progress-fill {
             width: 0%;
             height: 100%;
             background-color: var(--primary);
@@ -366,159 +528,335 @@
 </head>
 <body>
 
-    <div class="viewport" id="viewport">
-        <!-- Scene 1 -->
-        <div class="scene active" id="scene1">
-            <div class="s1-kicker">The Unchecked AI Problem</div>
-            <h1 class="s1-headline">What happens when your AI agent runs unconstrained SQL?</h1>
-            <div class="code-card">
-                <div class="code-card-top">
-                    <div class="code-card-dots">
-                        <span class="code-dot red"></span>
-                        <span class="code-dot"></span>
-                        <span class="code-dot"></span>
+    <!-- ── 16:9 Viewport ── -->
+    <div class="stage" id="stage">
+        <!-- SVG Fake Cursor -->
+        <svg class="fake-cursor" id="cursor" viewBox="0 0 24 24" fill="none">
+            <path d="M4 4l7 17 2.5-6.5L20 12 4 4z" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        </svg>
+
+        <!-- Top Header -->
+        <header class="header">
+            <div class="brand">
+                <div class="brand-icon">🛡️</div>
+                <span class="brand-title">Autonomous Database Guardian</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    <span>analytics.db</span>
+                </div>
+                <div class="status-pill">
+                    <span id="recordsPill">38 Records</span>
+                </div>
+                <div class="status-pill">
+                    <span>Groq / gpt-oss-120b</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="workspace">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-title">SCHEMA TABLES</div>
+                <div class="table-item">
+                    <span>users</span>
+                    <span class="table-badge">11 rows</span>
+                </div>
+                <div class="table-item">
+                    <span>orders</span>
+                    <span class="table-badge">27 rows</span>
+                </div>
+                <div class="table-item" id="logsTableItem">
+                    <span>system_logs</span>
+                    <span class="table-badge" id="logsCountBadge">38 rows</span>
+                </div>
+                <div class="table-item">
+                    <span>audit_log</span>
+                    <span class="table-badge" id="auditCountBadge">0 logged</span>
+                </div>
+            </aside>
+
+            <!-- Chat Area -->
+            <main class="chat-area">
+                <div class="messages-pane" id="msgPane">
+                    <!-- Welcome Hero -->
+                    <div class="welcome-box" id="welcomeBox">
+                        <div class="welcome-chip">AI DATABASE COPILOT</div>
+                        <h1 class="welcome-title">Ask your database anything</h1>
+                        <p class="welcome-sub">Query tables, analyze data, and run migrations in plain English. Read queries run instantly; destructive changes pause for your authorization.</p>
+
+                        <div class="suggestions">
+                            <div class="suggestion" id="sug1">
+                                <span class="pill-tag read">SELECT</span>
+                                <span class="suggestion-title">List all registered users &amp; roles</span>
+                            </div>
+                            <div class="suggestion">
+                                <span class="pill-tag read">JOIN</span>
+                                <span class="suggestion-title">Top 5 orders with customer details</span>
+                            </div>
+                            <div class="suggestion">
+                                <span class="pill-tag read">GROUP BY</span>
+                                <span class="suggestion-title">Log level breakdown &amp; latest errors</span>
+                            </div>
+                            <div class="suggestion">
+                                <span class="pill-tag write">DELETE</span>
+                                <span class="suggestion-title">Delete DEBUG logs (requires approval)</span>
+                            </div>
+                        </div>
                     </div>
-                    <span>agent_execution.log</span>
+
+                    <!-- User Message 1 -->
+                    <div class="msg-row msg-user" id="userMsg1">
+                        <div class="user-bubble">List all registered users &amp; roles</div>
+                    </div>
+
+                    <!-- Guardian Response 1 -->
+                    <div class="msg-row msg-guardian" id="guardMsg1">
+                        <div class="guardian-card">
+                            <div class="card-head">
+                                <span>🛡️ Guardian</span>
+                                <span style="font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">0.18s</span>
+                            </div>
+                            <div class="query-block">SELECT id, username, email, role, created_at FROM users;</div>
+                            <div style="padding: 10px 14px;">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>alice</td><td>alice@example.com</td><td>admin</td></tr>
+                                        <tr><td>2</td><td>bob</td><td>bob@example.com</td><td>editor</td></tr>
+                                        <tr><td>3</td><td>charlie</td><td>charlie@example.com</td><td>viewer</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message 2 (Destructive) -->
+                    <div class="msg-row msg-user" id="userMsg2">
+                        <div class="user-bubble">Delete all system logs where level = 'DEBUG'</div>
+                    </div>
+
+                    <!-- Guardian Response 2 (Safety Gate Approval) -->
+                    <div class="msg-row msg-guardian" id="guardMsg2">
+                        <div class="guardian-card" style="border-color: rgba(239, 68, 68, 0.3);">
+                            <div class="card-head">
+                                <span style="color: var(--danger)">⚠️ Approval Required</span>
+                                <span class="pill-tag write">DESTRUCTIVE</span>
+                            </div>
+                            <div class="hazard-box">
+                                <div class="hazard-title">This query will modify the database</div>
+                                <div class="hazard-sql">DELETE FROM system_logs WHERE level = 'DEBUG';</div>
+                                <div class="hazard-actions">
+                                    <button class="btn-act deny">Deny (N)</button>
+                                    <button class="btn-act approve" id="btnApproveSim">Approve (Y)</button>
+                                </div>
+                            </div>
+                            <div id="approvedResultText" style="display: none; padding: 10px 14px; font-size: 12.5px; color: var(--text-secondary);">
+                                ✓ Successfully executed DELETE — 2 rows removed from system_logs.
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="code-content">
-                    <span style="color: var(--text-dim)"># Prompt instructions failed to prevent mutation</span><br>
-                    <span style="color: var(--danger); font-weight: 600;">EXECUTING: DELETE FROM users WHERE 1=1;</span><br>
-                    <span style="color: var(--text-dim)">// Fatal error: 10,000 rows dropped.</span>
+
+                <!-- Composer -->
+                <div class="composer-bar">
+                    <div class="composer-box">
+                        <div class="simulated-text">
+                            <span id="promptText"></span><span class="cursor-pipe" id="cursorPipe"></span>
+                        </div>
+                        <div class="btn-send-sim">➔</div>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
 
-        <!-- Scene 2 -->
-        <div class="scene" id="scene2">
-            <div class="s2-badge">🛡️ AUTONOMOUS DATABASE GUARDIAN</div>
-            <h1 class="s2-headline">AI querying with deterministic guardrails.</h1>
-            <p class="s2-sub">Safe reads run automatically in milliseconds. Mutating operations pause for explicit operator authorization.</p>
-            <div class="feature-grid">
-                <div class="feature-item">Model Context Protocol (MCP)</div>
-                <div class="feature-item">LangGraph State Machine</div>
-                <div class="feature-item">Physical Runtime Interrupts</div>
-            </div>
-        </div>
-
-        <!-- Scene 3 -->
-        <div class="scene" id="scene3">
-            <div class="s3-pipeline">
-                <div class="pipe-node">1. MCP Schema</div>
-                <span style="color: var(--text-dim)">→</span>
-                <div class="pipe-node">2. LLM Planner</div>
-                <span style="color: var(--text-dim)">→</span>
-                <div class="pipe-node active">3. Safety Gate (Paused)</div>
-                <span style="color: var(--text-dim)">→</span>
-                <div class="pipe-node">4. Executor</div>
-            </div>
-
-            <div class="approval-dialog">
-                <div class="dialog-header">
-                    <span class="dialog-title">⚠️ DESTRUCTIVE QUERY REQUIRING OPERATOR APPROVAL</span>
-                    <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--danger); font-weight: 600;">HITL INTERRUPT</span>
-                </div>
-                <div class="dialog-sql">
-                    DELETE FROM system_logs WHERE level = 'DEBUG';
-                </div>
-                <div class="dialog-buttons">
-                    <button class="btn secondary">Deny (N)</button>
-                    <button class="btn primary">Approve (Y)</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Scene 4 -->
-        <div class="scene" id="scene4">
-            <div class="cockpit-view">
-                <div class="cockpit-top">
-                    <span>AUDIT TRAIL</span>
-                    <span style="color: var(--success)">STATUS: PROTECTED</span>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Query</th>
-                            <th>Risk Level</th>
-                            <th>Operator Review</th>
-                            <th>Rows</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>SELECT * FROM users;</code></td>
-                            <td><span style="color: var(--success)">READ_ONLY</span></td>
-                            <td>Auto-Approved</td>
-                            <td>11</td>
-                        </tr>
-                        <tr>
-                            <td><code>DELETE FROM system_logs...</code></td>
-                            <td><span style="color: var(--danger)">DESTRUCTIVE</span></td>
-                            <td>Authorized (y)</td>
-                            <td>2</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Scene 5 -->
-        <div class="scene" id="scene5">
-            <div class="s2-badge">OPEN SOURCE</div>
-            <h1 class="s5-headline">Autonomous Database Guardian</h1>
-            <p class="s5-sub">Deterministic AI database copilot with human-in-the-loop review.</p>
-            <div class="repo-badge">git clone https://github.com/Saharshsingh1711/ADG.git</div>
+        <!-- Outro Scene -->
+        <div class="outro-overlay" id="outroOverlay">
+            <div class="outro-badge">OPEN SOURCE</div>
+            <h1 class="outro-title">Autonomous Database Guardian</h1>
+            <p class="outro-sub">Deterministic AI database copilot with Model Context Protocol (MCP) and runtime human-in-the-loop safety gates.</p>
+            <div class="clone-box">git clone https://github.com/Saharshsingh1711/ADG.git</div>
         </div>
     </div>
 
-    <!-- Controls -->
+    <!-- ── Player Controls ── -->
     <div class="controls">
         <button class="ctrl-btn" id="btnPlayPause">▶ Replay</button>
-        <div class="progress-bar">
-            <div class="progress-indicator" id="progressIndicator"></div>
+        <button class="ctrl-btn" id="btnAudioToggle" style="margin-left: 8px;">🔊 Sound: ON</button>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
         </div>
-        <span id="timeDisplay">0.0s / 20.0s</span>
+        <span id="timeLabel">0.0s / 20.0s</span>
     </div>
 
+    <!-- ── Sound Synthesizer Engine ── -->
     <script>
-        const scenes = [
-            document.getElementById('scene1'),
-            document.getElementById('scene2'),
-            document.getElementById('scene3'),
-            document.getElementById('scene4'),
-            document.getElementById('scene5')
-        ];
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
 
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playClick() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.04);
+            }
+
+            playChime() {
+                if (!this.enabled || !this.ctx) return;
+                [523.25, 659.25, 783.99].forEach((f, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, this.ctx.currentTime + idx * 0.06);
+                    gain.gain.setValueAtTime(0.18, this.ctx.currentTime + idx * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.06 + 0.4);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.06);
+                    osc.stop(this.ctx.currentTime + idx * 0.06 + 0.4);
+                });
+            }
+
+            playAlert() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playChord() {
+                if (!this.enabled || !this.ctx) return;
+                [261.63, 329.63, 392.00, 523.25].forEach((f) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 1.2);
+                });
+            }
+        }
+
+        const sound = new SoundFX();
+
+        // ── Timeline Simulation ──
         const tl = gsap.timeline({
             paused: true,
             onUpdate: () => {
                 const p = (tl.progress() * 100).toFixed(1);
-                document.getElementById('progressIndicator').style.width = `${p}%`;
-                document.getElementById('timeDisplay').textContent = `${(tl.time()).toFixed(1)}s / 20.0s`;
+                document.getElementById('progressFill').style.width = `${p}%`;
+                document.getElementById('timeLabel').textContent = `${(tl.time()).toFixed(1)}s / 20.0s`;
             }
         });
 
-        function showScene(index) {
-            scenes.forEach((s, idx) => s.classList.toggle('active', idx === index));
-        }
+        // 0.0s - Initial state
+        tl.set('#cursor', { x: 700, y: 500 })
+          .set('#welcomeBox', { display: 'flex', opacity: 1 })
+          .set('#promptText', { textContent: '' })
 
-        tl.call(() => showScene(0), null, 0.0)
-          .fromTo('#scene1 .code-card', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 }, 0.4)
+          // 0.8s - Move cursor to suggestion 1
+          .to('#cursor', { x: 420, y: 240, duration: 0.8, ease: 'power2.out' }, 0.4)
+          .call(() => {
+              sound.playClick();
+              document.getElementById('sug1').classList.add('active-click');
+          }, null, 1.2)
+          .to('#sug1', { scale: 1, duration: 0.1 }, 1.3)
+          .to('#welcomeBox', { opacity: 0, height: 0, margin: 0, padding: 0, duration: 0.3, display: 'none' }, 1.4)
 
-          .call(() => showScene(1), null, 4.0)
-          .fromTo('#scene2 .s2-headline', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 }, 4.2)
+          // 1.5s - Show user query 1 & response
+          .to('#userMsg1', { opacity: 1, y: 0, duration: 0.25 }, 1.5)
+          .call(() => sound.playChime(), null, 1.8)
+          .to('#guardMsg1', { opacity: 1, y: 0, duration: 0.35 }, 1.8)
 
-          .call(() => showScene(2), null, 8.5)
-          .fromTo('#scene3 .approval-dialog', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 }, 8.7)
+          // 3.5s - Real-time typing for Destructive Query
+          .to('#cursor', { x: 450, y: 620, duration: 0.6 }, 3.2)
+          .call(() => {
+              const text = "Delete all system logs where level = 'DEBUG'";
+              let i = 0;
+              const target = document.getElementById('promptText');
+              target.textContent = "";
+              const interval = setInterval(() => {
+                  if (i < text.length) {
+                      target.textContent += text[i];
+                      sound.playClick();
+                      i++;
+                  } else {
+                      clearInterval(interval);
+                  }
+              }, 45);
+          }, null, 3.8)
 
-          .call(() => showScene(3), null, 13.5)
-          .fromTo('#scene4 .cockpit-view', { opacity: 0, scale: 0.98 }, { opacity: 1, scale: 1, duration: 0.4 }, 13.7)
+          // 6.2s - Click send
+          .to('#cursor', { x: 1140, y: 625, duration: 0.5 }, 6.2)
+          .call(() => {
+              sound.playClick();
+              document.getElementById('promptText').textContent = "";
+          }, null, 6.7)
+          .to('#userMsg2', { opacity: 1, y: 0, duration: 0.25 }, 6.8)
 
-          .call(() => showScene(4), null, 17.5)
-          .fromTo('#scene5 .s5-headline', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 }, 17.7)
-          .to({}, { duration: 2.5 }, 17.5);
+          // 7.2s - Intercept at safety gate!
+          .call(() => sound.playAlert(), null, 7.2)
+          .to('#guardMsg2', { opacity: 1, y: 0, duration: 0.35 }, 7.2)
 
+          // 8.5s - Move cursor to Approve button
+          .to('#cursor', { x: 910, y: 440, duration: 0.8, ease: 'power2.out' }, 8.2)
+          .call(() => {
+              sound.playChime();
+              document.getElementById('btnApproveSim').style.backgroundColor = '#059669';
+              document.getElementById('btnApproveSim').textContent = '✓ Approved';
+              document.getElementById('approvedResultText').style.display = 'block';
+              document.getElementById('logsCountBadge').textContent = '36 rows';
+              document.getElementById('auditCountBadge').textContent = '1 logged';
+          }, null, 9.2)
+
+          // 12.0s - Outro overlay
+          .call(() => sound.playChord(), null, 14.5)
+          .to('#outroOverlay', { opacity: 1, duration: 0.6, pointerEvents: 'auto' }, 14.5)
+          .to({}, { duration: 5.5 }, 14.5);
+
+        // Controls
         const btnPlay = document.getElementById('btnPlayPause');
         btnPlay.addEventListener('click', () => {
+            sound.init();
             if (tl.progress() >= 1) {
                 tl.restart();
             } else if (tl.isActive()) {
@@ -528,6 +866,12 @@
                 tl.play();
                 btnPlay.textContent = '⏸ Pause';
             }
+        });
+
+        const btnAudio = document.getElementById('btnAudioToggle');
+        btnAudio.addEventListener('click', () => {
+            sound.enabled = !sound.enabled;
+            btnAudio.textContent = sound.enabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
         });
 
         window.addEventListener('DOMContentLoaded', () => {
