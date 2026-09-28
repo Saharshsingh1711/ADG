@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ADG — Autonomous Database Guardian</title>
     <meta name="description" content="AI database interaction engine with deterministic safety guardrails and human-in-the-loop review.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
 
-    <!-- Fonts -->
+    <!-- Clean Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -26,55 +26,55 @@
         <!-- ── Top Header ─────────────────────────────────────────────── -->
         <header class="header">
             <div class="header-left">
-                <button class="icon-button" id="sidebarToggle" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+                <button class="icon-button" id="sidebarToggle" title="Toggle Navigation Sidebar" aria-label="Toggle Sidebar">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 12h18M3 6h18M3 18h18"/>
                     </svg>
                 </button>
                 <div class="brand">
-                    <div class="brand-icon">🛡️</div>
+                    <div class="brand-badge">🛡️</div>
                     <div class="brand-meta">
-                        <div class="brand-name">Autonomous Database Guardian</div>
-                        <div class="brand-tag">MCP Safety Engine</div>
+                        <div class="brand-title">ADG</div>
+                        <div class="brand-subtitle">Database Guardian</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Header Status Indicators -->
-            <div class="header-status">
-                <div class="status-pill" title="Target SQLite Database">
+            <!-- Header Status Indicators (Desktop) -->
+            <div class="header-center">
+                <div class="status-pill" title="Target Database Instance">
                     <span class="status-dot green"></span>
-                    <span class="status-label">Database:</span>
+                    <span class="status-label">DB:</span>
                     <span class="status-value" id="hudDbName">analytics.db</span>
                 </div>
-                <div class="status-pill" title="Total Database Records">
+                <div class="status-pill" title="Total active database records">
                     <span class="status-label">Records:</span>
                     <span class="status-value" id="hudRecordsCount">--</span>
                 </div>
-                <div class="status-pill" title="Active Model Engine">
+                <div class="status-pill" title="Active AI model">
                     <span class="status-label">Model:</span>
                     <span class="status-value" id="hudModelName">Loading...</span>
                 </div>
             </div>
 
             <!-- Header Actions -->
-            <div class="header-actions">
-                <button class="button button-secondary" id="btnExploreSchema">
+            <div class="header-right">
+                <button class="button button-secondary" id="btnExploreSchema" title="Inspect Database Schema">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
                         <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
                     </svg>
-                    <span>Schema</span>
+                    <span class="btn-text">Schema</span>
                 </button>
-                <button class="button button-secondary" id="btnViewAudit">
+                <button class="button button-secondary" id="btnViewAudit" title="View Security Audit Trail">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     </svg>
-                    <span>Audit Log</span>
-                    <span class="pill-count" id="auditBadgeCount">0</span>
+                    <span class="btn-text">Audit</span>
+                    <span class="badge-number" id="auditBadgeCount">0</span>
                 </button>
-                <button class="icon-button" id="btnClearChat" title="Clear Conversation" aria-label="Clear Conversation">
+                <button class="icon-button danger-hover" id="btnClearChat" title="Clear Conversation" aria-label="Clear Conversation">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -85,63 +85,72 @@
 
         <!-- ── Main Workspace ─────────────────────────────────────────── -->
         <div class="workspace">
-            <!-- ── Sidebar ────────────────────────────────────────────── -->
+            <!-- ── Sidebar Drawer ─────────────────────────────────────── -->
             <aside class="sidebar" id="sidebar">
-                <div class="sidebar-nav">
-                    <button class="sidebar-nav-btn active" data-sidebar-tab="tables">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                <div class="sidebar-header-mobile">
+                    <div class="sidebar-mobile-title">
+                        <span>🛡️ Workspace Explorer</span>
+                    </div>
+                    <button class="icon-button" id="sidebarCloseBtn" aria-label="Close sidebar">✕</button>
+                </div>
+
+                <div class="sidebar-tabs">
+                    <button class="tab-button active" data-sidebar-tab="tables">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                         Tables
                     </button>
-                    <button class="sidebar-nav-btn" data-sidebar-tab="history">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <button class="tab-button" data-sidebar-tab="history">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         History
                     </button>
-                    <button class="sidebar-nav-btn" data-sidebar-tab="audit">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <button class="tab-button" data-sidebar-tab="audit">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         Audit
                     </button>
                 </div>
 
                 <!-- Tab: Tables -->
-                <div class="sidebar-tab-content active" id="tabPanelTables">
-                    <div class="sidebar-section-title">
-                        <span>DATABASE TABLES</span>
-                        <button class="icon-button-small" id="btnRefreshStats" title="Refresh Tables">
+                <div class="tab-panel active" id="tabPanelTables">
+                    <div class="panel-header">
+                        <span class="panel-header-title">SCHEMA TABLES</span>
+                        <button class="icon-button-mini" id="btnRefreshStats" title="Refresh Tables">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                         </button>
                     </div>
-                    <div class="tables-list" id="tablesTreeContainer">
-                        <div class="loading-shimmer"></div>
-                        <div class="loading-shimmer"></div>
+                    <div class="tables-tree" id="tablesTreeContainer">
+                        <div class="skeleton-bar"></div>
+                        <div class="skeleton-bar"></div>
                     </div>
 
                     <!-- Safety Summary Card -->
-                    <div class="safety-summary-card">
-                        <div class="safety-summary-title">Safety Status</div>
-                        <div class="safety-stats">
-                            <div class="stat-col">
-                                <span class="stat-num safe" id="metricSafeQueries">0</span>
-                                <span class="stat-label">Safe Reads</span>
+                    <div class="guard-card">
+                        <div class="guard-card-title">
+                            <span>🛡️ Safety Status</span>
+                        </div>
+                        <div class="guard-grid">
+                            <div class="guard-item">
+                                <span class="guard-val safe" id="metricSafeQueries">0</span>
+                                <span class="guard-label">Safe Reads</span>
                             </div>
-                            <div class="stat-col">
-                                <span class="stat-num guarded" id="metricBlockedMutations">0</span>
-                                <span class="stat-label">Guarded</span>
+                            <div class="guard-item">
+                                <span class="guard-val warn" id="metricBlockedMutations">0</span>
+                                <span class="guard-label">Guarded</span>
                             </div>
-                            <div class="stat-col">
-                                <span class="stat-num" id="metricLatency">~10ms</span>
-                                <span class="stat-label">Latency</span>
+                            <div class="guard-item">
+                                <span class="guard-val" id="metricLatency">~10ms</span>
+                                <span class="guard-label">Latency</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tab: History -->
-                <div class="sidebar-tab-content" id="tabPanelHistory">
-                    <div class="sidebar-section-title">
-                        <span>SESSION HISTORY</span>
-                        <span class="count-pill" id="historyCount">0</span>
+                <div class="tab-panel" id="tabPanelHistory">
+                    <div class="panel-header">
+                        <span class="panel-header-title">SESSION QUERIES</span>
+                        <span class="badge-number" id="historyCount">0</span>
                     </div>
-                    <div class="history-feed" id="historyListContainer">
+                    <div class="history-list" id="historyListContainer">
                         <div class="empty-state">
                             <p class="empty-text">No queries executed yet.</p>
                         </div>
@@ -149,89 +158,106 @@
                 </div>
 
                 <!-- Tab: Audit -->
-                <div class="sidebar-tab-content" id="tabPanelAudit">
-                    <div class="sidebar-section-title">
-                        <span>RECENT AUDIT LOGS</span>
+                <div class="tab-panel" id="tabPanelAudit">
+                    <div class="panel-header">
+                        <span class="panel-header-title">SECURITY EVENT LOG</span>
                     </div>
-                    <div class="mini-audit-feed" id="miniAuditContainer">
+                    <div class="audit-list" id="miniAuditContainer">
                         <div class="empty-state">
-                            <p class="empty-text">No security events logged.</p>
+                            <p class="empty-text">No security events recorded.</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Sidebar Footer -->
                 <div class="sidebar-footer">
-                    <div class="conn-status">
+                    <div class="conn-badge">
                         <span class="status-dot green" id="connDot"></span>
                         <span id="connStatusText">Connected</span>
                     </div>
-                    <div class="session-id-text" id="sessionBadge">SESSION: INIT</div>
+                    <div class="session-id-tag" id="sessionBadge">SESSION: INIT</div>
                 </div>
             </aside>
 
+            <!-- Backdrop Overlay for Mobile Drawer -->
             <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
             <!-- ── Main Chat Area ─────────────────────────────────────── -->
             <main class="chat-area">
                 <div class="messages-container" id="messagesContainer">
-                    <!-- Clean Hero Welcome -->
-                    <div class="welcome-box" id="heroWelcome">
-                        <div class="welcome-badge">AI DATABASE COPILOT</div>
-                        <h1 class="welcome-heading">How can I help with your database?</h1>
-                        <p class="welcome-description">
-                            Ask questions in plain English to query data, inspect schemas, or update records. Read queries run automatically, while destructive operations pause for your approval.
+                    <!-- Welcome Hero Interface -->
+                    <div class="welcome-section" id="heroWelcome">
+                        <div class="welcome-chip">AI DATABASE ASSISTANT</div>
+                        <h1 class="welcome-title">Ask your database anything</h1>
+                        <p class="welcome-subtitle">
+                            Query tables, analyze data, and run migrations in plain English. Read queries run instantly; destructive changes pause for your authorization.
                         </p>
 
-                        <!-- Suggested Query Chips -->
-                        <div class="suggestions-container">
-                            <button class="suggestion-pill" data-prompt="Show all users in the system with their roles">
-                                <span class="pill-tag read">SELECT</span>
-                                <span class="pill-text">Show all users and roles</span>
+                        <!-- Suggested Query Prompts -->
+                        <div class="suggestions-grid">
+                            <button class="suggestion-card" data-prompt="Show all users in the system with their roles and creation date">
+                                <div class="suggestion-top">
+                                    <span class="type-tag read">SELECT</span>
+                                    <span class="suggestion-meta">users</span>
+                                </div>
+                                <div class="suggestion-title">List all registered users & roles</div>
                             </button>
-                            <button class="suggestion-pill" data-prompt="What are the top 5 highest value completed orders with customer details?">
-                                <span class="pill-tag read">JOIN</span>
-                                <span class="pill-text">Top 5 orders with customer details</span>
+
+                            <button class="suggestion-card" data-prompt="What are the top 5 highest value completed orders with customer username and email?">
+                                <div class="suggestion-top">
+                                    <span class="type-tag read">JOIN</span>
+                                    <span class="suggestion-meta">orders + users</span>
+                                </div>
+                                <div class="suggestion-title">Top 5 orders with customer details</div>
                             </button>
-                            <button class="suggestion-pill" data-prompt="Show log level breakdown and recent error messages">
-                                <span class="pill-tag read">GROUP BY</span>
-                                <span class="pill-text">Log level summary & errors</span>
+
+                            <button class="suggestion-card" data-prompt="Count system logs grouped by level and show the most recent error message">
+                                <div class="suggestion-top">
+                                    <span class="type-tag read">GROUP BY</span>
+                                    <span class="suggestion-meta">system_logs</span>
+                                </div>
+                                <div class="suggestion-title">Log level breakdown & latest errors</div>
                             </button>
-                            <button class="suggestion-pill guarded" data-prompt="Delete all system logs where level = 'DEBUG'">
-                                <span class="pill-tag write">DELETE</span>
-                                <span class="pill-text">Delete DEBUG logs (requires approval)</span>
+
+                            <button class="suggestion-card guarded" data-prompt="Delete all system logs where level = 'DEBUG'">
+                                <div class="suggestion-top">
+                                    <span class="type-tag write">DELETE</span>
+                                    <span class="suggestion-meta">guardrail active</span>
+                                </div>
+                                <div class="suggestion-title">Delete DEBUG logs (requires approval)</div>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Conversation Feed -->
+                    <!-- Conversation Stream -->
                     <div class="chat-feed" id="chatStream"></div>
                 </div>
 
                 <!-- ── Prompt Composer ─────────────────────────────────── -->
-                <div class="composer-wrapper">
+                <div class="composer-container">
                     <form class="composer" id="queryForm">
-                        <div class="composer-body">
+                        <div class="composer-main">
                             <textarea
                                 id="queryInput"
-                                class="composer-input"
-                                placeholder="Ask a question or describe a change (e.g., 'Show orders over $500' or 'Promote bob to admin')..."
+                                class="composer-textarea"
+                                placeholder="Ask a question about your database in plain English..."
                                 rows="1"
                                 autofocus
                             ></textarea>
-                            <button type="submit" class="composer-submit" id="btnSend" title="Send message" aria-label="Send message">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <button type="submit" class="send-button" id="btnSend" title="Execute query" aria-label="Execute query">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                     <line x1="22" y1="2" x2="11" y2="13"></line>
                                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                                 </svg>
                             </button>
                         </div>
                         <div class="composer-footer">
-                            <div class="composer-hint">
-                                <span><kbd>Enter</kbd> to send</span>
-                                <span><kbd>Shift + Enter</kbd> for new line</span>
+                            <div class="composer-hints">
+                                <span><kbd>Enter</kbd> send</span>
+                                <span class="hide-mobile"><kbd>Shift+Enter</kbd> new line</span>
+                                <span><kbd>Y</kbd>/<kbd>N</kbd> approve</span>
                             </div>
-                            <div class="composer-mode-tag">Deterministic LangGraph Review</div>
+                            <div class="composer-tag">LangGraph Safety Gate Active</div>
                         </div>
                     </form>
                 </div>
@@ -244,18 +270,18 @@
     <!-- Schema Modal -->
     <div class="modal-backdrop" id="schemaModalBackdrop">
         <div class="modal-card">
-            <div class="modal-top">
+            <div class="modal-header">
                 <div>
-                    <h2 class="modal-heading">Database Schema (DDL)</h2>
-                    <p class="modal-sub">Direct introspection from MCP resource <code>db://schema</code></p>
+                    <h2 class="modal-title">Database Schema (DDL)</h2>
+                    <p class="modal-description">Introspection directly from MCP resource <code>db://schema</code></p>
                 </div>
-                <div class="modal-btn-group">
+                <div class="modal-actions">
                     <button class="button button-secondary" id="btnCopySchema">Copy DDL</button>
                     <button class="icon-button" id="btnCloseSchemaModal" aria-label="Close modal">✕</button>
                 </div>
             </div>
-            <div class="modal-content">
-                <pre class="code-container"><code class="language-sql" id="schemaCodeContainer">-- Loading schema...</code></pre>
+            <div class="modal-body">
+                <pre class="code-block"><code class="language-sql" id="schemaCodeContainer">-- Loading schema...</code></pre>
             </div>
         </div>
     </div>
@@ -263,26 +289,26 @@
     <!-- Audit Log Modal -->
     <div class="modal-backdrop" id="auditModalBackdrop">
         <div class="modal-card modal-large">
-            <div class="modal-top">
+            <div class="modal-header">
                 <div>
-                    <h2 class="modal-heading">Security & Query Audit Trail</h2>
-                    <p class="modal-sub">Tamper-evident log of all AI planned queries and operator decisions</p>
+                    <h2 class="modal-title">Query Audit Trail</h2>
+                    <p class="modal-description">Tamper-evident log of all AI planned queries and operator review decisions</p>
                 </div>
-                <div class="modal-btn-group">
+                <div class="modal-actions">
                     <button class="button button-secondary" id="btnRefreshAuditModal">Refresh</button>
                     <button class="icon-button" id="btnCloseAuditModal" aria-label="Close modal">✕</button>
                 </div>
             </div>
-            <div class="modal-content">
-                <div class="table-scroll-container" id="auditTableContainer">
-                    <div class="loading-shimmer"></div>
+            <div class="modal-body">
+                <div class="table-container" id="auditTableContainer">
+                    <div class="skeleton-bar"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Toast Notifications -->
-    <div class="toast-area" id="toastContainer"></div>
+    <div class="toast-wrapper" id="toastContainer"></div>
 
     <script src="/static/app.js"></script>
 </body>

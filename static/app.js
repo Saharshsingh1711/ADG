@@ -1,6 +1,6 @@
 /**
  * ADG — Autonomous Database Guardian | Clean Client JS
- * WebSocket communication, schema table inspector, and Human-in-the-Loop review.
+ * WebSocket real-time communication, schema introspection, and Human-in-the-Loop review.
  */
 
 class DatabaseGuardian {
@@ -23,6 +23,7 @@ class DatabaseGuardian {
         this.sidebar = document.getElementById('sidebar');
         this.sidebarToggle = document.getElementById('sidebarToggle');
         this.sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        this.sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
 
         this.hudDbName = document.getElementById('hudDbName');
         this.hudRecordsCount = document.getElementById('hudRecordsCount');
@@ -66,10 +67,30 @@ class DatabaseGuardian {
     }
 
     bindEvents() {
-        // Sidebar Toggle
+        // Sidebar Toggle (Desktop toggle / Mobile drawer)
         this.sidebarToggle.addEventListener('click', () => {
-            this.sidebar.classList.toggle('closed');
+            const isMobile = window.innerWidth <= 900;
+            if (isMobile) {
+                this.sidebar.classList.toggle('open');
+                if (this.sidebarBackdrop) this.sidebarBackdrop.classList.toggle('open');
+            } else {
+                this.sidebar.classList.toggle('closed');
+            }
         });
+
+        if (this.sidebarCloseBtn) {
+            this.sidebarCloseBtn.addEventListener('click', () => {
+                this.sidebar.classList.remove('open');
+                if (this.sidebarBackdrop) this.sidebarBackdrop.classList.remove('open');
+            });
+        }
+
+        if (this.sidebarBackdrop) {
+            this.sidebarBackdrop.addEventListener('click', () => {
+                this.sidebar.classList.remove('open');
+                this.sidebarBackdrop.classList.remove('open');
+            });
+        }
 
         // Tabs
         this.tabBtns.forEach(btn => {
@@ -114,10 +135,10 @@ class DatabaseGuardian {
             this.showToast('Conversation cleared');
         });
 
-        // Suggestion Pill Clicks
-        document.querySelectorAll('.suggestion-pill').forEach(pill => {
-            pill.addEventListener('click', () => {
-                const prompt = pill.getAttribute('data-prompt');
+        // Suggestion Card Clicks
+        document.querySelectorAll('.suggestion-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const prompt = card.getAttribute('data-prompt');
                 if (prompt) {
                     this.queryInput.value = prompt;
                     this.handleQuerySubmit();
@@ -133,7 +154,7 @@ class DatabaseGuardian {
         });
         this.btnCopySchema.addEventListener('click', () => {
             navigator.clipboard.writeText(this.schemaCodeContainer.textContent).then(() => {
-                this.showToast('Schema copied to clipboard');
+                this.showToast('Schema DDL copied to clipboard');
             });
         });
 
@@ -151,6 +172,10 @@ class DatabaseGuardian {
             if (e.key === 'Escape') {
                 this.closeSchemaModal();
                 this.closeAuditModal();
+                if (this.sidebar) {
+                    this.sidebar.classList.remove('open');
+                    if (this.sidebarBackdrop) this.sidebarBackdrop.classList.remove('open');
+                }
             }
             if (this.activeApprovalPending) {
                 if (e.key.toLowerCase() === 'y' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
@@ -250,10 +275,10 @@ class DatabaseGuardian {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         this.activeApprovalPending = false;
 
-        const card = document.querySelector('.approval-card.active');
+        const card = document.querySelector('.hazard-box.active');
         if (card) {
             card.classList.remove('active');
-            const actions = card.querySelector('.approval-actions');
+            const actions = card.querySelector('.hazard-actions');
             if (actions) {
                 actions.innerHTML = `<span style="font-size: 11px; font-weight: 600; color: ${decision === 'approved' ? 'var(--success)' : 'var(--danger)'}">
                     ${decision === 'approved' ? '✓ Approved by operator' : '✕ Denied by operator'}
@@ -269,9 +294,9 @@ class DatabaseGuardian {
 
     renderUserMessage(text) {
         const row = document.createElement('div');
-        row.className = 'message-row message-user';
+        row.className = 'chat-row chat-user';
         row.innerHTML = `
-            <div class="user-text-bubble">${this.escapeHtml(text)}</div>
+            <div class="user-bubble">${this.escapeHtml(text)}</div>
         `;
         this.chatStream.appendChild(row);
         this.scrollToBottom();
@@ -279,17 +304,17 @@ class DatabaseGuardian {
 
     renderGuardianResult(answerMarkdown, sql, risk, execTime) {
         const row = document.createElement('div');
-        row.className = 'message-row message-guardian';
+        row.className = 'chat-row chat-guardian';
 
         let sqlHtml = '';
         if (sql) {
             sqlHtml = `
-                <div class="query-box">
-                    <div class="query-box-header">
-                        <span class="query-box-title">SQL Query (${risk || 'READ_ONLY'})</span>
-                        <button class="btn-copy" onclick="navigator.clipboard.writeText(\`${this.escapeForTemplate(sql)}\`); window.__guardian.showToast('Copied SQL');">Copy</button>
+                <div class="query-container">
+                    <div class="query-header">
+                        <span class="query-title">SQL Query (${risk || 'READ_ONLY'})</span>
+                        <button class="btn-copy-code" onclick="navigator.clipboard.writeText(\`${this.escapeForTemplate(sql)}\`); window.__guardian.showToast('Copied SQL');">Copy</button>
                     </div>
-                    <div class="query-code">
+                    <div class="query-content">
                         <pre><code class="language-sql">${this.escapeHtml(sql)}</code></pre>
                     </div>
                 </div>
@@ -300,15 +325,15 @@ class DatabaseGuardian {
 
         row.innerHTML = `
             <div class="response-card">
-                <div class="response-header">
-                    <div class="response-title">
+                <div class="response-card-header">
+                    <div class="response-card-title">
                         <span>🛡️</span>
                         <span>Guardian</span>
                     </div>
-                    <span class="response-time">${execTime ? `${execTime}s` : ''}</span>
+                    <span class="response-card-time">${execTime ? `${execTime}s` : ''}</span>
                 </div>
                 ${sqlHtml}
-                <div class="response-body">
+                <div class="response-content">
                     ${parsedMarkdown}
                 </div>
             </div>
@@ -326,28 +351,28 @@ class DatabaseGuardian {
     renderApprovalPrompt(sql, risk) {
         this.activeApprovalPending = true;
         const row = document.createElement('div');
-        row.className = 'message-row message-guardian';
+        row.className = 'chat-row chat-guardian';
 
         row.innerHTML = `
             <div class="response-card" style="border-color: var(--danger-border)">
-                <div class="response-header">
-                    <div class="response-title" style="color: var(--danger)">
+                <div class="response-card-header">
+                    <div class="response-card-title" style="color: var(--danger)">
                         <span>⚠️</span>
                         <span>Approval Required</span>
                     </div>
-                    <span class="pill-tag write">DESTRUCTIVE</span>
+                    <span class="type-tag write">DESTRUCTIVE</span>
                 </div>
-                <div class="approval-card active">
-                    <div class="approval-header">
+                <div class="hazard-box active">
+                    <div class="hazard-header">
                         <div>
-                            <div class="approval-title">This query will modify the database</div>
-                            <div class="approval-desc">Review the planned SQL statement below and authorize execution.</div>
+                            <div class="hazard-title">This query will modify the database</div>
+                            <div class="hazard-subtitle">Review the planned SQL statement below and authorize execution.</div>
                         </div>
                     </div>
-                    <div class="approval-sql">
+                    <div class="hazard-sql">
                         <code>${this.escapeHtml(sql)}</code>
                     </div>
-                    <div class="approval-actions">
+                    <div class="hazard-actions">
                         <button class="btn-deny" onclick="window.__guardian.sendApprovalDecision('denied')">Deny (N)</button>
                         <button class="btn-approve" onclick="window.__guardian.sendApprovalDecision('approved')">Approve (Y)</button>
                     </div>
@@ -361,16 +386,16 @@ class DatabaseGuardian {
 
     renderGuardianError(errorMsg) {
         const row = document.createElement('div');
-        row.className = 'message-row message-guardian';
+        row.className = 'chat-row chat-guardian';
         row.innerHTML = `
             <div class="response-card" style="border-color: var(--danger-border)">
-                <div class="response-header">
-                    <div class="response-title" style="color: var(--danger)">
+                <div class="response-card-header">
+                    <div class="response-card-title" style="color: var(--danger)">
                         <span>❌</span>
                         <span>Error</span>
                     </div>
                 </div>
-                <div class="response-body" style="color: var(--danger)">
+                <div class="response-content" style="color: var(--danger)">
                     <p>${this.escapeHtml(errorMsg)}</p>
                 </div>
             </div>
@@ -382,12 +407,12 @@ class DatabaseGuardian {
     showThinkingIndicator() {
         this.removeThinkingIndicator();
         const row = document.createElement('div');
-        row.className = 'message-row message-guardian';
+        row.className = 'chat-row chat-guardian';
         row.id = 'thinkingWrapper';
         row.innerHTML = `
-            <div class="thinking-box">
-                <div class="spinner"></div>
-                <span class="thinking-label">Planning SQL & analyzing schema...</span>
+            <div class="thinking-row">
+                <div class="spinner-icon"></div>
+                <span class="thinking-text">Planning query & verifying schema...</span>
             </div>
         `;
         this.chatStream.appendChild(row);
@@ -431,31 +456,36 @@ class DatabaseGuardian {
         this.tablesTreeContainer.innerHTML = '';
         tables.forEach(t => {
             const item = document.createElement('div');
-            item.className = 'table-item';
+            item.className = 'table-row-card';
 
             const colsHtml = t.columns.map(c => `
-                <div class="column-row">
-                    <span class="column-name ${c.pk ? 'pk' : ''}">${c.pk ? '🔑 ' : ''}${c.name}</span>
-                    <span class="column-type">${c.type}</span>
+                <div class="column-item">
+                    <span class="col-title ${c.pk ? 'pk' : ''}">${c.pk ? '🔑 ' : ''}${c.name}</span>
+                    <span class="col-type-tag">${c.type}</span>
                 </div>
             `).join('');
 
             item.innerHTML = `
-                <div class="table-item-header">
-                    <div class="table-title-group">
-                        <span class="table-name">${t.name}</span>
+                <div class="table-card-header">
+                    <div class="table-card-title">
+                        <span>🗄️</span>
+                        <span>${t.name}</span>
                     </div>
-                    <span class="table-badge">${t.row_count} rows</span>
+                    <span class="table-row-tag">${t.row_count} rows</span>
                 </div>
-                <div class="table-columns-body">
-                    ${colsHtml}
-                    <button class="table-peek-btn" onclick="window.__guardian.prefillPrompt('SELECT * FROM ${t.name} LIMIT 10;')">
-                        View Sample
-                    </button>
+                <div class="table-card-body">
+                    <div class="column-list">
+                        ${colsHtml}
+                    </div>
+                    <div class="table-action-row">
+                        <button class="btn-table-peek" onclick="window.__guardian.prefillPrompt('SELECT * FROM ${t.name} LIMIT 10;')">
+                            Sample Rows ➔
+                        </button>
+                    </div>
                 </div>
             `;
 
-            item.querySelector('.table-item-header').addEventListener('click', () => {
+            item.querySelector('.table-card-header').addEventListener('click', () => {
                 item.classList.toggle('open');
             });
 
@@ -466,6 +496,11 @@ class DatabaseGuardian {
     prefillPrompt(text) {
         this.queryInput.value = text;
         this.queryInput.focus();
+        // If sidebar is open on mobile, close it
+        if (window.innerWidth <= 900 && this.sidebar) {
+            this.sidebar.classList.remove('open');
+            if (this.sidebarBackdrop) this.sidebarBackdrop.classList.remove('open');
+        }
     }
 
     recordHistory(sql, risk) {
@@ -476,10 +511,10 @@ class DatabaseGuardian {
         if (empty) empty.remove();
 
         const card = document.createElement('div');
-        card.className = 'history-item';
+        card.className = 'feed-item';
         card.innerHTML = `
-            <div class="history-query-text">${this.escapeHtml(sql)}</div>
-            <div class="history-meta-text">
+            <div class="feed-text">${this.escapeHtml(sql)}</div>
+            <div class="feed-meta">
                 <span>${risk}</span>
                 <span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
@@ -514,12 +549,12 @@ class DatabaseGuardian {
 
         entries.forEach(e => {
             const item = document.createElement('div');
-            item.className = 'history-item';
+            item.className = 'feed-item';
             item.innerHTML = `
-                <div class="history-query-text" style="color: ${e.approved ? 'var(--text-main)' : 'var(--danger)'}">
+                <div class="feed-text" style="color: ${e.approved ? 'var(--text-primary)' : 'var(--danger)'}">
                     ${e.approved ? '✓' : '✕'} ${this.escapeHtml(e.query_text)}
                 </div>
-                <div class="history-meta-text">
+                <div class="feed-meta">
                     <span>${e.risk_level}</span>
                     <span>${e.executed_at.split(' ')[1] || ''}</span>
                 </div>
@@ -558,7 +593,7 @@ class DatabaseGuardian {
     }
 
     async loadFullAuditTrail() {
-        this.auditTableContainer.innerHTML = '<div class="loading-shimmer"></div>';
+        this.auditTableContainer.innerHTML = '<div class="skeleton-bar"></div>';
 
         try {
             const res = await fetch('/api/audit');
